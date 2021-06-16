@@ -28,6 +28,7 @@ returns_ 1 gzip -dc "$abs_srcdir/hufts-segv.gz" > out 2> err || fail=1
 compare /dev/null out || fail=1
 
 sed 's/.*hufts-segv.gz: /...: /' err > k; mv k err || fail=1
+grep -v 'Operation-Ending-Supplemental Code' err > k; mv k err || fail=1
 compare exp err || fail=1
 
 Exit $fail
