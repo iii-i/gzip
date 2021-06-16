@@ -1,0 +1,20 @@
+#!/bin/sh
+#Try running simple shell script compressed by gzexe
+
+. "${srcdir=.}/init.sh"; path_prepend_ ..
+
+cat <<EOF > foo || framework_failure_
+#!/bin/sh
+echo "Hello World!"
+EOF
+
+echo "Hello World!" > exp || framework_failure_
+
+fail=0
+gzexe foo || fail=1
+/bin/sh foo > out 2> err || fail=1
+
+compare exp out || fail=1
+test -s err && fail=1
+
+Exit $fail
