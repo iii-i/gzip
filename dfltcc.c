@@ -235,10 +235,8 @@ dfltcc_gdht (struct dfltcc_param_v0 *param)
   dfltcc (DFLTCC_GDHT, param, NULL, NULL, &next_in, &avail_in, NULL);
 }
 
-static off_t total_in;
-
 static dfltcc_cc
-dfltcc_cmpr_xpnd (struct dfltcc_param_v0 *param, int fn)
+dfltcc_cmpr_xpnd (struct dfltcc_param_v0 *param, int fn, off_t *total_in)
 {
   uch *next_out = outbuf + outcnt;
   size_t avail_out = OUTBUFSIZ - outcnt;
@@ -250,7 +248,7 @@ dfltcc_cmpr_xpnd (struct dfltcc_param_v0 *param, int fn)
                          window);
   off_t consumed_in = next_in - (inbuf + inptr);
   inptr += consumed_in;
-  total_in += consumed_in;
+  *total_in += consumed_in;
   outcnt += ((OUTBUFSIZ - outcnt) - avail_out);
   return cc;
 }
@@ -342,6 +340,7 @@ dfltcc_deflate (int pack_level)
 
   union aligned_dfltcc_param_v0 ctx_v0;
   struct dfltcc_param_v0 *param = init_param (&ctx_v0);
+  off_t total_in = 0;
 
   /* Compress ifd into ofd in a loop.  */
   while (true)
@@ -391,7 +390,8 @@ dfltcc_deflate (int pack_level)
         }
 
       /* Compress inbuf into outbuf.  */
-      while (dfltcc_cmpr_xpnd (param, DFLTCC_CMPR) == DFLTCC_CC_AGAIN)
+      while (dfltcc_cmpr_xpnd (param, DFLTCC_CMPR, &total_in)
+             == DFLTCC_CC_AGAIN)
         ;
 
       /* Unmask the input data.  */
@@ -420,6 +420,7 @@ dfltcc_inflate (void)
 
   union aligned_dfltcc_param_v0 ctx_v0;
   struct dfltcc_param_v0 *param = init_param (&ctx_v0);
+  off_t total_in = 0;
 
   /* Decompress ifd into ofd in a loop.  */
   while (true)
@@ -439,7 +440,8 @@ dfltcc_inflate (void)
 
         /* Decompress inbuf into outbuf.  */
         dfltcc_cc cc;
-        while ((cc = dfltcc_cmpr_xpnd (param, DFLTCC_XPND)) == DFLTCC_CC_AGAIN)
+        while ((cc = dfltcc_cmpr_xpnd (param, DFLTCC_XPND, &total_in))
+               == DFLTCC_CC_AGAIN)
           ;
         if (cc == DFLTCC_CC_OK)
           {
